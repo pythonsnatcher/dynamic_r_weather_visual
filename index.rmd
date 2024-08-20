@@ -31,8 +31,11 @@ library(ggplot2)
 library(corrplot)
 
 
+# Define the relative path to the database file
+db_file_path <- "data/weather_data.db"
+
 # Connect to the SQLite database
-con <- dbConnect(RSQLite::SQLite(), "/Users/snatch./Desktop/weather_data.db")
+con <- dbConnect(RSQLite::SQLite(), dbname = db_file_path)
 
 # List all tables
 tables <- dbListTables(con)
