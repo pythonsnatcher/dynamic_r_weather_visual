@@ -1,8 +1,11 @@
 .
 ├── DIRECTORY_STRUCTURE.md
 ├── data
-│   ├── 1.py
 │   └── weather_data.db
-└── main.py
+├── header.html
+├── index.rmd
+├── main.py
+├── script.js
+└── styles.css
 
-1 directory, 4 files
+1 directory, 7 files
