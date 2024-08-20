@@ -1,0 +1,289 @@
+
+## Introduction
+
+In this report, we analyze weather data collected from London, including temperature, wind speed, and tide heights. The goal is to explore various aspects of the weather patterns, identify trends, and visualize key metrics to gain a deeper understanding of local weather conditions.
+
+## Data Overview
+
+```{r schema, message=FALSE, warning=FALSE, echo=FALSE}
+
+# For database connection and interaction
+library(DBI)
+library(RSQLite)
+
+# For data manipulation and cleaning
+library(dplyr)
+
+# For creating and styling tables in HTML
+library(kableExtra)
+
+# For data visualization
+library(ggplot2)
+library(corrplot)
+
+
+# Connect to the SQLite database
+con <- dbConnect(RSQLite::SQLite(), "/Users/snatch./Desktop/weather_data.db")
+
+# List all tables
+tables <- dbListTables(con)
+
+# Get foreign key relationships for each table
+fk_relationships <- lapply(tables, function(table) {
+  dbGetQuery(con, paste("PRAGMA foreign_key_list(", table, ");", sep = ""))
+})
+names(fk_relationships) <- tables
+
+# Create a data frame to store relationships
+relationship_data <- do.call(rbind, lapply(names(fk_relationships), function(table) {
+  df <- fk_relationships[[table]]
+  if (nrow(df) > 0) {
+    data.frame(
+      Table = table,
+      FK_Column = df$from,
+      Referenced_Table = df$table,
+      Referenced_Column = df$to,
+      stringsAsFactors = FALSE
+    )
+  } else {
+    NULL
+  }
+}))
+
+# Load necessary libraries
+library(dplyr)
+library(knitr)
+library(kableExtra)
+
+# Assuming `relationship_data` is your data frame with foreign key relationships
+relationship_data %>%
+  kable("html", caption = "Foreign Key Relationships", escape = FALSE) %>%
+  kable_styling(full_width = FALSE, position = "center") %>%
+  column_spec(1, bold = TRUE, color = "black") %>%  # 'Table' column
+  column_spec(3, bold = TRUE, color = "black") %>%  # 'Referenced Table' column
+  column_spec(2, color = "blue") %>%                # 'From Column'
+  column_spec(4, color = "blue") %>%                # 'To Column'
+  row_spec(0, background = "#f2f2f2")               # Optional: Light grey background for header row
+```
+
+
+```{r clean_data, echo=FALSE, warning=FALSE, message=FALSE}
+library(DBI)
+library(RSQLite)
+library(dplyr)
+
+
+# Read data from the relevant table
+data <- dbReadTable(con, "WeatherReports")
+
+# Read lookup tables
+visibility_levels <- dbReadTable(con, "VisibilityLevels")
+weather_conditions <- dbReadTable(con, "WeatherConditions")
+wind_directions <- dbReadTable(con, "WindDirections")
+pollution_levels <- dbReadTable(con, "PollutionLevels")
+pollen_levels <- dbReadTable(con, "PollenLevels")
+uv_index_levels <- dbReadTable(con, "UVIndexLevels")
+
+# Clean numeric columns
+data <- data %>%
+  mutate(
+    high_temperature = as.numeric(gsub("[^0-9.]", "", as.character(high_temperature))),
+    low_temperature = as.numeric(gsub("[^0-9.]", "", as.character(low_temperature))),
+    current_temperature = suppressWarnings(as.numeric(gsub("[^0-9.]", "", as.character(current_temperature)))),
+    wind_speed = suppressWarnings(as.numeric(gsub("[^0-9.]", "", as.character(wind_speed)))),
+    humidity = suppressWarnings(as.numeric(gsub("[^0-9.]", "", as.character(humidity)))),
+    chance_of_precipitation = suppressWarnings(as.numeric(gsub("[^0-9.]", "", as.character(chance_of_precipitation)))),
+    pressure = suppressWarnings(as.numeric(gsub("[^0-9.]", "", as.character(pressure))))
+  )
+
+# Convert time_of_search to POSIXct
+data$time_of_search <- as.POSIXct(data$time_of_search, format = "%Y-%m-%d %H:%M")
+
+# Extract date from time_of_search
+data$date <- as.Date(data$time_of_search)
+
+# Keep time columns as text
+data$sunset <- as.character(data$sunset)
+data$sunrise <- as.character(data$sunrise)
+data$low_tide_morning_time <- as.character(data$low_tide_morning_time)
+data$high_tide_morning_time <- as.character(data$high_tide_morning_time)
+data$low_tide_evening_time <- as.character(data$low_tide_evening_time)
+data$high_tide_evening_time <- as.character(data$high_tide_evening_time)
+
+# Join with lookup tables
+data <- data %>%
+  left_join(visibility_levels, by = c("visibility_id" = "visibility_id")) %>%
+  rename(visibility_description = description) %>%
+  left_join(weather_conditions, by = c("weather_condition_id" = "weather_condition_id")) %>%
+  rename(weather_condition_description = description) %>%
+  left_join(wind_directions, by = c("wind_direction_id" = "wind_direction_id")) %>%
+  rename(wind_direction_description = description) %>%
+  left_join(pollution_levels, by = c("pollution_id" = "pollution_id")) %>%
+  rename(pollution_level_description = level) %>%
+  left_join(pollen_levels, by = c("pollen_id" = "pollen_id")) %>%
+  rename(pollen_level_description = level) %>%
+  left_join(uv_index_levels, by = c("uv_index_id" = "uv_index_id")) %>%
+  rename(uv_index_level_description = level)
+
+# Remove rows where humidity, pressure, or wind_speed are 0
+data <- data %>%
+  filter(humidity != 0, pressure != 0, wind_speed != 0)
+
+
+
+
+
+
+
+# Find the minimum low_temperature for each day
+daily_min_low_temp <- data %>%
+  group_by(date) %>%
+  summarise(min_low_temp = min(low_temperature[low_temperature > 0], na.rm = TRUE))
+
+# Join the daily minimum low temperature back to the original data
+data <- data %>%
+  left_join(daily_min_low_temp, by = "date")
+
+# Replace 0 and NA low_temperature values with the daily minimum low temperature
+data <- data %>%
+  mutate(
+    low_temperature = ifelse(is.na(low_temperature) | low_temperature == 0, min_low_temp, low_temperature)
+  )
+
+
+# Remove the temporary min_low_temp column
+data <- data %>%
+  select(-min_low_temp)
+
+
+
+
+
+
+
+
+
+# Check the cleaned data
+
+summary(data)
+```
+
+
+
+
+```{r, echo =FALSE}
+# Histogram for high temperatures
+ggplot(data, aes(x = high_temperature)) + 
+  geom_histogram(binwidth = 2, fill = "blue", color = "white") +
+  labs(title = "Distribution of High Temperatures", x = "High Temperature (°C)", y = "Frequency") +
+  theme_minimal()
+```
+
+
+
+
+
+
+```{r, echo=FALSE}
+# Histogram for wind speed
+ggplot(data, aes(x = wind_speed)) + 
+  geom_histogram(binwidth = 1, fill = "orange", color = "white") +
+  labs(title = "Distribution of Wind Speed", x = "Wind Speed (km/h)", y = "Frequency") +
+  theme_minimal()
+```
+
+
+```{r, echo=FALSE}
+# Scatter plot of high temperature vs. wind speed
+ggplot(data, aes(x = high_temperature, y = wind_speed)) +
+  geom_point(color = "blue") +
+  labs(title = "High Temperature vs. Wind Speed", x = "High Temperature (°C)", y = "Wind Speed (km/h)") +
+  theme_minimal()
+```
+
+
+```{r, echo=FALSE}
+# Convert 'weather_condition_description' to a factor for better plotting
+data$weather_condition_description <- factor(data$weather_condition_description)
+
+# Box plot of high temperature by weather condition with a cleaner design
+ggplot(data, aes(x = weather_condition_description, y = high_temperature, fill = weather_condition_description)) +
+  geom_boxplot(outlier.size = 2, outlier.colour = "red") +  # Highlight outliers
+  labs(title = "High Temperature by Weather Condition",
+       x = "Weather Description",
+       y = "High Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for better readability
+        legend.position = "none")  # Remove legend if it’s clear from the plot
+```
+
+
+
+```{r}
+# Time series plot of high temperature
+ggplot(data, aes(x = time_of_search, y = high_temperature)) +
+  geom_line(color = "blue") +
+  labs(title = "High Temperature Over Time", x = "Time", y = "High Temperature (°C)") +
+  theme_minimal()
+```
+
+
+
+
+
+
+```{r}
+# Correlation matrix plot (if you have multiple numeric columns)
+numeric_data <- data %>% select(high_temperature, low_temperature, current_temperature, wind_speed, humidity, pressure)
+correlation_matrix <- cor(numeric_data, use = "complete.obs")
+corrplot(correlation_matrix, method = "circle")
+```
+
+
+
+
+
+
+```{r}
+# Density plot of current temperature
+ggplot(data, aes(x = current_temperature, fill = "Current Temperature")) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density Plot of Current Temperature", x = "Current Temperature (°C)", y = "Density") +
+  theme_minimal()
+```
+
+
+
+
+
+```{r}
+# Convert time to date
+data$date <- as.Date(data$time_of_search)
+
+# Convert tide heights to numeric
+data$low_tide_morning_height <- as.numeric(as.character(data$low_tide_morning_height))
+data$high_tide_morning_height <- as.numeric(as.character(data$high_tide_morning_height))
+data$low_tide_evening_height <- as.numeric(as.character(data$low_tide_evening_height))
+data$high_tide_evening_height <- as.numeric(as.character(data$high_tide_evening_height))
+
+# Get the daily maximum and minimum tide heights
+daily_tides <- data %>%
+  group_by(date) %>%
+  summarise(
+    max_tide_height = max(c(low_tide_morning_height, high_tide_morning_height, low_tide_evening_height, high_tide_evening_height), na.rm = TRUE),
+    min_tide_height = min(c(low_tide_morning_height, high_tide_morning_height, low_tide_evening_height, high_tide_evening_height), na.rm = TRUE)
+  )
+
+# Plot the daily maximum and minimum tide heights
+ggplot(daily_tides, aes(x = date)) +
+  geom_line(aes(y = max_tide_height, color = "Maximum Tide Height"), size = 1) +
+  geom_line(aes(y = min_tide_height, color = "Minimum Tide Height"), size = 1) +
+  labs(title = "Daily Maximum and Minimum Tide Heights",
+       x = "Date",
+       y = "Tide Height (m)",
+       color = "Tide Type") +
+  scale_color_manual(values = c("Maximum Tide Height" = "red", 
+                                "Minimum Tide Height" = "blue")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
