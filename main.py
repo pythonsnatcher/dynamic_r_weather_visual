@@ -4,7 +4,7 @@ import sqlite3
 from oauth2client.service_account import ServiceAccountCredentials
 
 # Define the paths
-database_file_path = '/Users/snatch./PycharmProjects/weather_data/weather_data.db'
+database_file_path = 'data/weather_data.db'
 spreadsheet_url = 'https://docs.google.com/spreadsheets/d/156isq2fMNww4VpcRasL6u7o8EZQC7OEZxQllLP4H8pY/edit?gid=0#gid=0'
 worksheet_name = 'Sheet1'
 
