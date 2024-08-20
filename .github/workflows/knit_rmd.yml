@@ -19,7 +19,7 @@ jobs:
 
     - name: Install R packages
       run: |
-        R -e "install.packages(c('rmarkdown', 'knitr', 'DBI'), repos='https://cloud.r-project.org/')"
+        R -e "install.packages(c('rmarkdown', 'knitr', 'DBI', 'RSQLite', 'dplyr', 'kableExtra', 'ggplot2', 'corrplot', 'tidyverse', 'scales', 'viridis'), repos='https://cloud.r-project.org/')"
 
     - name: Install Pandoc
       run: |
