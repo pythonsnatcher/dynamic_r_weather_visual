@@ -1,7 +1,16 @@
+---
+title: 'Weather Data Analysis'
+output:
+  html_document:
+    css: styles.css
+    includes:
+      in_header: header.html
+date: "`r Sys.Date()`"
+---
 
 ## Introduction
 
-In this report, we analyze weather data collected from London, including temperature, wind speed, and tide heights. The goal is to explore various aspects of the weather patterns, identify trends, and visualize key metrics to gain a deeper understanding of local weather conditions.
+In this report, we analyze weather data collected from London, including temperature, wind speed, and tide heights. The data is continuously and automatically updated via a Python-based data pipeline, ensuring that our analysis reflects the most current weather conditions. Our goal is to explore various aspects of the weather patterns, identify trends, and visualize key metrics to gain a deeper understanding of local weather conditions.
 
 ## Data Overview
 
@@ -219,7 +228,7 @@ ggplot(data, aes(x = weather_condition_description, y = high_temperature, fill =
 
 
 
-```{r}
+```{r, echo=FALSE}
 # Time series plot of high temperature
 ggplot(data, aes(x = time_of_search, y = high_temperature)) +
   geom_line(color = "blue") +
@@ -232,7 +241,7 @@ ggplot(data, aes(x = time_of_search, y = high_temperature)) +
 
 
 
-```{r}
+```{r, echo=FALSE}
 # Correlation matrix plot (if you have multiple numeric columns)
 numeric_data <- data %>% select(high_temperature, low_temperature, current_temperature, wind_speed, humidity, pressure)
 correlation_matrix <- cor(numeric_data, use = "complete.obs")
@@ -244,7 +253,7 @@ corrplot(correlation_matrix, method = "circle")
 
 
 
-```{r}
+```{r, echo=FALSE}
 # Density plot of current temperature
 ggplot(data, aes(x = current_temperature, fill = "Current Temperature")) +
   geom_density(alpha = 0.5) +
@@ -256,7 +265,7 @@ ggplot(data, aes(x = current_temperature, fill = "Current Temperature")) +
 
 
 
-```{r}
+```{r, echo=FALSE}
 # Convert time to date
 data$date <- as.Date(data$time_of_search)
 
@@ -276,8 +285,8 @@ daily_tides <- data %>%
 
 # Plot the daily maximum and minimum tide heights
 ggplot(daily_tides, aes(x = date)) +
-  geom_line(aes(y = max_tide_height, color = "Maximum Tide Height"), size = 1) +
-  geom_line(aes(y = min_tide_height, color = "Minimum Tide Height"), size = 1) +
+  geom_line(aes(y = max_tide_height, color = "Maximum Tide Height"), linewidth = 1) +
+  geom_line(aes(y = min_tide_height, color = "Minimum Tide Height"), linewidth = 1) +
   labs(title = "Daily Maximum and Minimum Tide Heights",
        x = "Date",
        y = "Tide Height (m)",
@@ -286,4 +295,82 @@ ggplot(daily_tides, aes(x = date)) +
                                 "Minimum Tide Height" = "blue")) +
   theme_minimal() +
   theme(legend.position = "bottom")
+
 ```
+
+
+
+
+
+```{r, echo=FALSE}
+# Clean data: Convert columns to numeric
+data$high_temperature <- as.numeric(gsub("[^0-9.]", "", as.character(data$high_temperature)))
+data$wind_speed <- as.numeric(gsub("[^0-9.]", "", as.character(data$wind_speed)))
+data$humidity <- as.numeric(gsub("[^0-9.]", "", as.character(data$humidity)))
+
+# Bubble plot of high temperature vs. wind speed with bubble size representing humidity
+ggplot(data, aes(x = high_temperature, y = wind_speed, size = humidity, color = humidity)) +
+  geom_point(alpha = 0.7) +
+  scale_size_continuous(range = c(1, 15)) +
+  scale_color_viridis_c() +
+  labs(title = "Bubble Plot of High Temperature vs. Wind Speed",
+       x = "High Temperature (°C)",
+       y = "Wind Speed (km/h)",
+       size = "Humidity (%)",
+       color = "Humidity (%)") +
+  theme_minimal()
+
+```
+
+
+
+
+
+
+
+
+```{r, echo =FALSE, warning=FALSE}
+# Ensure sunrise, sunset are properly formatted as times and date is in Date format
+data$sunrise <- as.POSIXct(data$sunrise, format = "%H:%M", tz = "UTC")
+data$sunset <- as.POSIXct(data$sunset, format = "%H:%M", tz = "UTC")
+
+data$date <- as.Date(data$date)
+ggplot(data, aes(x = date)) +
+  geom_line(aes(y = sunrise), size = 1.2, color = "blue") +
+  geom_line(aes(y = sunset), size = 1.2, color = "red") +
+  geom_point(aes(y = sunrise), size = 2, color = "blue") +
+  geom_point(aes(y = sunset), size = 2, color = "red") +
+  labs(title = "Sunrise and Sunset Times Over Time",
+       x = "Date",
+       y = NULL) +  # Set y label to NULL to remove label text
+  scale_y_datetime(date_labels = "%H:%M",  # Format y-axis to show time only
+                   breaks = scales::date_breaks("2 hours")) +  # Break every 2 hours
+  theme_minimal()
+
+
+```
+
+
+
+```{r bubble_plot_filtered, echo=FALSE, warning=FALSE, message=FALSE}
+# Load necessary libraries
+library(tidyverse)
+library(scales)  # For custom color scales
+
+# Filter data to exclude chance of precipitation values less than 1%
+filtered_data <- data %>%
+  filter(chance_of_precipitation >= 1)
+
+# Bubble plot of chance of precipitation with fixed small size bubbles and a color scheme from red to blue
+ggplot(filtered_data, aes(x = time_of_search, y = chance_of_precipitation, color = current_temperature)) +
+  geom_point(size = 2, alpha = 0.7) +  # Set a fixed small size for all bubbles
+  scale_color_gradient(low = "blue", high = "red") +  # Color gradient from blue (low temp) to red (high temp)
+  labs(title = "Bubble Plot of Chance of Precipitation Over Time",
+       x = "Time",
+       y = "Chance of Precipitation (%)",
+       color = "Current Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+```
+
+
