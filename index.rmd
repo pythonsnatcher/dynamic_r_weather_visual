@@ -8,6 +8,21 @@ output:
 date: "`r Sys.Date()`"
 ---
 
+```{r, include=FALSE}
+# Install missing packages if necessary
+required_packages <- c("DBI", "RSQLite", "dplyr", "ggplot2", "corrplot", "kableExtra", "tidyverse", "scales", "viridis")
+installed_packages <- rownames(installed.packages())
+new_packages <- required_packages[!(required_packages %in% installed_packages)]
+if(length(new_packages)) {
+  install.packages(new_packages, repos = 'https://cloud.r-project.org/')
+}
+
+# Load libraries
+lapply(required_packages, library, character.only = TRUE)
+```
+
+
+
 ## Introduction
 
 In this report, we analyze weather data collected from London, including temperature, wind speed, and tide heights. The data is continuously and automatically updated via a Python-based data pipeline, ensuring that our analysis reflects the most current weather conditions. Our goal is to explore various aspects of the weather patterns, identify trends, and visualize key metrics to gain a deeper understanding of local weather conditions.
