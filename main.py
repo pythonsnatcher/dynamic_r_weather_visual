@@ -8,6 +8,17 @@ database_file_path = 'data/weather_data.db'
 spreadsheet_url = 'https://docs.google.com/spreadsheets/d/156isq2fMNww4VpcRasL6u7o8EZQC7OEZxQllLP4H8pY/edit?gid=0#gid=0'
 worksheet_name = 'Sheet1'
 
+
+logging.info(f"Working directory: {os.getcwd()}")
+
+# Check if database file exists
+if not os.path.exists(database_file_path):
+    logging.error(f"Database file not found at {database_file_path}")
+else:
+    logging.info(f"Database found at {database_file_path}")
+
+
+
 # Set up Google Sheets credentials
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds_dict = {
@@ -23,18 +34,26 @@ creds_dict = {
     "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/weather-data%40weather-data-429210.iam.gserviceaccount.com",
     "universe_domain": "googleapis.com"
 }
+logging.info("Authorizing Google Sheets API...")
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_url(spreadsheet_url)
 worksheet = sheet.worksheet(worksheet_name)
 
-# Read the data from the Google Sheets
+logging.info("Reading data from Google Sheets...")
 data = worksheet.get_all_records()
 df = pd.DataFrame(data)
+logging.info(f"Data retrieved from Google Sheets, total rows: {len(df)}")
 
 # Connect to the SQLite database
-conn = sqlite3.connect(database_file_path)
-cursor = conn.cursor()
+logging.info("Connecting to SQLite database...")
+try:
+    conn = sqlite3.connect(database_file_path)
+    cursor = conn.cursor()
+    logging.info("Database connection successful.")
+except Exception as e:
+    logging.error(f"Error connecting to database: {e}")
+    raise
 
 # Process each row of the DataFrame
 for _, row in df.iterrows():
