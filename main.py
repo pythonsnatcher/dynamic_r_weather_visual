@@ -2,6 +2,8 @@ import gspread
 import pandas as pd
 import sqlite3
 from oauth2client.service_account import ServiceAccountCredentials
+import os
+import logging
 
 # Define the paths
 database_file_path = 'data/weather_data.db'
