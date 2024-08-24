@@ -2,7 +2,7 @@ name: Generate Directory Tree
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Runs every day at midnight
+    - cron: '0 0 */21 * *' # Runs every day at midnight
   workflow_dispatch: # Allows manual trigger from the Actions tab
 
 jobs:
