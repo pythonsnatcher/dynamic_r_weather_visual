@@ -26,3 +26,9 @@ jobs:
     - name: Run the weather data update script
       run: |
         python main.py
+
+    - name: Upload database artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: weather_data_db
+        path: data/weather_data.db
