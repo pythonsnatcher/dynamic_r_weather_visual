@@ -30,8 +30,17 @@ jobs:
         run: |
           R -e "cat('Starting R Markdown rendering...\n'); rmarkdown::render('index.rmd', output_file = 'index.html'); cat('Finished R Markdown rendering.\n')"
 
-      - name: Upload HTML as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: index-html
-          path: index.html
+      # Commit and push the generated HTML file
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+      - name: Commit HTML file
+        run: |
+          git add index.html
+          git commit -m "Automated update of index.html"
+
+      - name: Push changes
+        run: |
+          git push
