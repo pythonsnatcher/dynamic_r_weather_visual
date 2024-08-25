@@ -56,7 +56,16 @@ jobs:
           echo "Database does NOT exist after script execution."
         fi
 
-    # Upload database as an artifact for inspection
+    # Commit and push the updated database
+    - name: Commit and push updated database
+      run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+        git add data/weather_data.db
+        git commit -m 'Update database with new weather data'
+        git push
+
+    # Optionally upload database as an artifact for inspection
     - name: Upload database artifact
       uses: actions/upload-artifact@v2
       with:
