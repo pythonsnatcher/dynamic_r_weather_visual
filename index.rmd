@@ -126,6 +126,11 @@ data <- data %>%
 # Convert time_of_search to POSIXct
 data$time_of_search <- as.POSIXct(data$time_of_search, format = "%Y-%m-%d %H:%M")
 
+# Filter out rows with specific 'time_of_search' values (rows 1895 and 1896)
+data <- data %>%
+  filter(!(time_of_search %in% c("2024-08-23 06:14", "2024-08-23 05:38")))
+
+
 # Extract date from time_of_search
 data$date <- as.Date(data$time_of_search)
 
