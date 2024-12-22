@@ -9,4 +9,4 @@
 ├── script.js
 └── styles.css
 
-1 directory, 8 files
+2 directories, 8 files
