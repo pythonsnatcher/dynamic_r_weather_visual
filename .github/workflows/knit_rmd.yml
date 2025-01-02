@@ -17,7 +17,7 @@ jobs:
       - name: Install and verify system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev pandoc libfontconfig1-dev
+          sudo apt-get install -y libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev pandoc libfontconfig1-dev libtiff5-dev libjpeg-dev
           pkg-config --modversion fontconfig freetype2  # Verify the libraries are installed
 
       - name: Install fonts
