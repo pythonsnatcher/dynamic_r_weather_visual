@@ -2,13 +2,13 @@ name: Knit R Markdown to HTML
 
 on:
   schedule:
-    - cron: '0 1 */3 * *'  # Runs every 3 days at 1 AM UTC
+    - cron: '0 0 */12 * *'  # Runs every 3 days at 1 AM UTC
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
   knit-rmd:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # Adjust this as needed
+    timeout-minutes: 50  # Adjust this as needed
 
     steps:
       - name: Checkout repository
