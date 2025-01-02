@@ -10,7 +10,10 @@ date: "`r Sys.Date()`"
 
 ```{r, include=FALSE}
 # Install missing packages if necessary
-required_packages <- c("DBI", "RSQLite", "dplyr", "ggplot2", "corrplot", "kableExtra", "tidyverse", "scales", "viridis")
+required_packages <- c("DBI", "RSQLite", "dplyr", "ggplot2", "corrplot", "kableExtra", "tidyverse", "scales", "viridis",
+"DBI", "RSQLite", "dplyr", "ggplot2", "corrplot", "kableExtra", 
+                       "tidyverse", "scales", "viridis", "systemfonts", "textshaping", 
+                       "svglite", "ragg", "rmarkdown")
 installed_packages <- rownames(installed.packages())
 new_packages <- required_packages[!(required_packages %in% installed_packages)]
 if(length(new_packages)) {
