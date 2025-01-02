@@ -67,7 +67,7 @@ jobs:
 
     # Optionally upload database as an artifact for inspection
     - name: Upload database artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: weather_data_db
         path: data/weather_data.db
